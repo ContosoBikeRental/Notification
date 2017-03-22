@@ -5,6 +5,8 @@ import (
 
 	"sync"
 
+	"time"
+
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/streadway/amqp"
 )
@@ -203,6 +205,10 @@ func (conn *AmqpConnection) log(format string, args ...interface{}) {
 	logMessageTo(stdLogger, fmt.Sprintf("AMQP '%s': %s", conn.Name, format), args...)
 }
 
+func (conn *AmqpConnection) logerr(format string, args ...interface{}) {
+	logMessageTo(errLogger, fmt.Sprintf("AMQP '%s': %s", conn.Name, format), args...)
+}
+
 func NewPublishingAmqpConnection(connectionName, amqpURI string, reliable bool, shutdownWg *sync.WaitGroup) (c *PublishingAmqpConnection, theError error) {
 	base, err := NewAmqpConnection(connectionName, amqpURI, reliable, shutdownWg)
 	return &PublishingAmqpConnection{base}, err
@@ -218,7 +224,20 @@ func NewAmqpConnection(connectionName, amqpURI string, reliable bool, shutdownWg
 	var err error
 
 	c.log("dialing %q", amqpURI)
-	c.conn, err = amqp.Dial(amqpURI)
+	maxTries := 10
+	for i := 1; i <= maxTries; i++ {
+		c.conn, err = amqp.Dial(amqpURI)
+		if err == nil {
+			break
+		}
+
+		if i < maxTries {
+			c.logerr("%d/%d - Couldn't connect, sleeping and trying again", i, maxTries)
+			time.Sleep(1 * time.Second)
+		} else {
+			c.logerr("%d/%d - Couldn't connect.", i, maxTries)
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("Dial: %s", err)
 	}

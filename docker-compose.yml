@@ -1,0 +1,24 @@
+version: "2"
+
+services:
+  notification:
+    build: ./
+    environment:
+      - OUT_AMQP_URI=amqp://rabbit
+      - IN_AMQP_URI=amqp://rabbit
+      - OUT_EXCHANGE=out
+      - IN_EXCHANGE=in
+      - IN_BINDINGKEY=
+      - CONSUMERTAG_OVERRIDE=
+    depends_on:
+      - rabbit
+    links:
+      - rabbit
+    
+  rabbit:
+    image: rabbitmq:3-management
+    expose:
+      - "5672"
+    ports:
+      - "5672:5672"
+      - "15672:15672"

@@ -94,8 +94,8 @@ func init() {
 
 	// Define a channel that will be called when the OS wants the program to exit
 	// This will be used to gracefully shutdown the consumer
-	osChan := make(chan os.Signal, 3)
-	signal.Notify(osChan, os.Interrupt, os.Kill, syscall.SIGTERM)
+	osChan := make(chan os.Signal, 5)
+	signal.Notify(osChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGABRT, syscall.SIGQUIT)
 	go func() {
 		LogErrFormat("OS signal received: %v", <-osChan)
 		shutdown()
@@ -112,6 +112,7 @@ func main() {
 
 	Log("Listening...")
 	ShutdownWaitGroup.Wait()
+	Log("Notification graceful shutdown.")
 }
 
 // Declares default queues and exchanges
@@ -208,7 +209,5 @@ func shutdown() {
 
 	Log("Waiting for handlers to exit")
 	ShutdownWaitGroup.Wait()
-	Log("All handlers done. Shutting down...")
-
-	os.Exit(1)
+	Log("All handlers done.")
 }

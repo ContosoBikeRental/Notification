@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	uuid "github.com/nu7hatch/gouuid"
 	"github.com/streadway/amqp"
 )
 
 type Notification struct {
-	RequestID       string
 	RecipientUserID string
 	Subject         string
 	Message         string
@@ -30,11 +28,6 @@ func (n Notification) Validate() error {
 	var errorSlice []string
 	var zeroString string
 
-	if n.RequestID == zeroString {
-		errorSlice = append(errorSlice, "Must specify RequestID")
-	} else if _, err := uuid.Parse([]byte(n.RequestID)); err != nil {
-		errorSlice = append(errorSlice, "RequestID must be a GUID")
-	}
 	if n.Message == zeroString && n.Subject == zeroString {
 		errorSlice = append(errorSlice, "Must provide a non-empty Subject or Message")
 	}
@@ -53,12 +46,12 @@ func (n Notification) Validate() error {
 	return nil
 }
 
-func ProcessNotification(n Notification) error {
+func ProcessNotification(context *RequestContext, n Notification) error {
 	if err := n.Validate(); err != nil {
 		return AddMyInfoToErr(err)
 	}
 
-	Log("Processing notification")
+	LogWithContext(context, "Processing notification")
 
 	var serializedNotification string
 	var err error
@@ -66,17 +59,17 @@ func ProcessNotification(n Notification) error {
 		return AddMyInfoToErr(err)
 	}
 
-	Log("Notification is: %s", serializedNotification)
+	LogWithContext(context, "Notification is: %s", serializedNotification)
 
 	if n.RecipientUserID != "" {
-		Log("Notifying user (%s)", n.RecipientUserID)
+		LogWithContext(context, "Notifying user (%s)", n.RecipientUserID)
 		/*
 		 * Send email/text to user
 		 */
-		Log("User notified")
+		LogWithContext(context, "User notified")
 	}
 
-	Log("Publishing notification to outbound queue")
+	LogWithContext(context, "Publishing notification to outbound queue")
 
 	// Try to publish completion
 	maxTries := 3
@@ -84,13 +77,13 @@ func ProcessNotification(n Notification) error {
 	for i := 1; i <= maxTries; i++ {
 		if err = PubAmqpConnection.Publish(
 			EnvPubExchange,
-			n.RequestID,
+			context.RequestID.String(),
 			amqp.Publishing{
 				ContentType: "application/json",
 				Body:        []byte(serializedNotification),
 			},
 		); err != nil {
-			LogErrFormat("%d/%d Publish failed: %v", i, maxTries, err)
+			LogErrFormatWithContext(context, "%d/%d Publish failed: %v", i, maxTries, err)
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -100,9 +93,9 @@ func ProcessNotification(n Notification) error {
 	}
 
 	if !complete {
-		return fmt.Errorf("Failed to publish notification to outbound queue! (%s)", n.RequestID)
+		return fmt.Errorf("Failed to publish notification to outbound queue! (%s)", context.RequestID.String())
 	}
 
-	Log("Notification complete")
+	LogWithContext(context, "Notification complete")
 	return nil
 }

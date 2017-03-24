@@ -66,6 +66,8 @@ func ProcessNotification(context *RequestContext, n Notification) error {
 		/*
 		 * Send email/text to user
 		 */
+		LogWithContext(context, "Sending email... but not really")
+		LogWithContext(context, "Sending Twilio notification... but not really")
 		LogWithContext(context, "User notified")
 	}
 

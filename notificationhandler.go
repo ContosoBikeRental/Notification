@@ -16,6 +16,7 @@ type ReservationDetails struct {
 	StartTime     string `bson:"startTime" json:"startTime"`
 	EndTime       string `bson:"endTime" json:"endTime"`
 	State         string `bson:"state" json:"state"`
+	InvoiceID     string `bson:"invoiceId" json:"invoiceId"`
 }
 
 func (r *ReservationDetails) Serialize() (string, error) {

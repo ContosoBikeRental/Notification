@@ -2,67 +2,42 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/streadway/amqp"
 )
 
-type Notification struct {
-	RecipientUserID string
-	Subject         string
-	Message         string
+type ReservationDetails struct {
+	ReservationID string `bson:"reservationId" json:"reservationId"`
+	BikeID        string `bson:"bikeId" json:"bikeId"`
+	UserID        string `bson:"userId" json:"userId"`
+	RequestTime   string `bson:"requestTime" json:"requestTime"`
+	StartTime     string `bson:"startTime" json:"startTime"`
+	EndTime       string `bson:"endTime" json:"endTime"`
+	State         string `bson:"state" json:"state"`
 }
 
-func (n Notification) Serialize() (string, error) {
-	nBytes, err := json.Marshal(n)
+func (r *ReservationDetails) Serialize() (string, error) {
+	rBytes, err := json.Marshal(r)
 	if err != nil {
 		return "", AddMyInfoToErr(err)
 	}
 
-	return string(nBytes), nil
+	return string(rBytes), nil
 }
 
-func (n Notification) Validate() error {
-	var errorSlice []string
-	var zeroString string
-
-	if n.Message == zeroString && n.Subject == zeroString {
-		errorSlice = append(errorSlice, "Must provide a non-empty Subject or Message")
-	}
-
-	// TODO validate that Recipient is a valid userID
-
-	if len(errorSlice) > 0 {
-		errorBytes, err := json.Marshal(errorSlice)
-		if err != nil {
-			return AddMyInfoToErr(err)
-		}
-
-		return errors.New(string(errorBytes))
-	}
-
-	return nil
-}
-
-func ProcessNotification(context *RequestContext, n Notification) error {
-	if err := n.Validate(); err != nil {
-		return AddMyInfoToErr(err)
-	}
-
+func ProcessNotification(context *RequestContext, r *ReservationDetails) error {
 	LogWithContext(context, "Processing notification")
 
-	var serializedNotification string
+	var serializedReservation string
 	var err error
-	if serializedNotification, err = n.Serialize(); err != nil {
+	if serializedReservation, err = r.Serialize(); err != nil {
 		return AddMyInfoToErr(err)
 	}
 
-	LogWithContext(context, "Notification is: %s", serializedNotification)
-
-	if n.RecipientUserID != "" {
-		LogWithContext(context, "Notifying user (%s)", n.RecipientUserID)
+	if r.UserID != "" {
+		LogWithContext(context, "Notifying user (%s) of reservation (%s) with state (%s)", r.UserID, r.ReservationID, r.State)
 		/*
 		 * Send email/text to user
 		 */
@@ -82,7 +57,10 @@ func ProcessNotification(context *RequestContext, n Notification) error {
 			context.RequestID.String(),
 			amqp.Publishing{
 				ContentType: "application/json",
-				Body:        []byte(serializedNotification),
+				Headers: amqp.Table{
+					RequestIDHeaderName: context.RequestID.String(),
+				},
+				Body: []byte(serializedReservation),
 			},
 		); err != nil {
 			LogErrFormatWithContext(context, "%d/%d Publish failed: %v", i, maxTries, err)

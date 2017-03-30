@@ -41,8 +41,8 @@ func HandleNotificationDeliveries(deliveries <-chan amqp.Delivery, done *sync.Wa
 		requestContext := &RequestContext{reqUUID}
 
 		// Handle delivery
-		n := Notification{}
-		if err := json.Unmarshal(d.Body, &n); err != nil {
+		r := &ReservationDetails{}
+		if err := json.Unmarshal(d.Body, r); err != nil {
 			LogWithContext(requestContext, "[%q] Couldn't deserialize notification. Sending to dead-letter exchange with 'reject': %v", d.DeliveryTag, err)
 			if err := d.Reject(
 				false, // requeue
@@ -51,16 +51,7 @@ func HandleNotificationDeliveries(deliveries <-chan amqp.Delivery, done *sync.Wa
 			}
 			continue
 		}
-		if err := n.Validate(); err != nil {
-			LogWithContext(requestContext, "[%q] Invalid notification received. Sending to dead-letter exchange with 'reject': %v", d.DeliveryTag, err)
-			if err := d.Reject(
-				false, // requeue
-			); err != nil {
-				LogErrFormatWithContext(requestContext, "[%q] Rejecting message: %v", d.DeliveryTag, err)
-			}
-			continue
-		}
-		if err := ProcessNotification(requestContext, n); err != nil {
+		if err := ProcessNotification(requestContext, r); err != nil {
 			LogErrFormatWithContext(requestContext, "[%q] Processing notification failed. Requeuing with 'nack': %v", d.DeliveryTag, err)
 			if err := d.Nack(
 				false, // multiple

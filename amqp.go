@@ -224,7 +224,7 @@ func NewAmqpConnection(connectionName, amqpURI string, reliable bool, shutdownWg
 	var err error
 
 	c.log("dialing %q", amqpURI)
-	maxTries := 10
+	maxTries := 20 // ~20 seconds
 	for i := 1; i <= maxTries; i++ {
 		c.conn, err = amqp.Dial(amqpURI)
 		if err == nil {

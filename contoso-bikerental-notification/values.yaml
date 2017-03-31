@@ -9,10 +9,10 @@ image:
 
 
 inAmqp:
-  connectionString: amqp://rabbit
+  connectionString: amqp://<>-rabbit
   exchangeName: in
   bindingKey: reservation
   consumerTagOverride: 
 outAmqp:
-  connectionString: amqp://rabbit
+  connectionString: amqp://<>-rabbit
   exchangeName: out

@@ -4,8 +4,8 @@ services:
   notification:
     build: ./
     environment:
-      - OUT_AMQP_URI=amqp://rabbit
-      - IN_AMQP_URI=amqp://rabbit
+      - OUT_AMQP_CONNECTIONSTRING=10.127.84.237:5672
+      - IN_AMQP_CONNECTIONSTRING=10.127.84.237:5672
       - OUT_EXCHANGE=out
       - IN_EXCHANGE=in
       - IN_BINDINGKEY=

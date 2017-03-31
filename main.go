@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	pubURIEnvName              = "OUT_AMQP_URI"
-	subURIEnvName              = "IN_AMQP_URI"
+	pubURIEnvName              = "OUT_AMQP_CONNECTIONSTRING"
+	subURIEnvName              = "IN_AMQP_CONNECTIONSTRING"
 	pubExchangeEnvName         = "OUT_EXCHANGE"
 	subExchangeEnvName         = "IN_EXCHANGE"
 	subBindingKeyEnvName       = "IN_BINDINGKEY"

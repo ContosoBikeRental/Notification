@@ -1,0 +1,45 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.image.repoCredsSecretName }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}/contoso-bikerental-notification:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+          - name: OUT_AMQP_CONNECTIONSTRING
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "fullname" . }}
+                key: out-amqp-connection-string
+          - name: IN_AMQP_CONNECTIONSTRING
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "fullname" . }}
+                key: in-amqp-connection-string
+          - name: OUT_EXCHANGE
+            value: {{ .Values.outAmqp.exchangeName }}
+          - name: IN_EXCHANGE
+            value: {{ .Values.inAmqp.exchangeName }}
+          - name: IN_BINDINGKEY
+            value: {{ .Values.inAmqp.bindingKey }}
+          - name: CONSUMERTAG_OVERRIDE
+            value: {{ .Values.inAmqp.consumerTagOverride }}
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi

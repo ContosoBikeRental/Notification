@@ -11,8 +11,10 @@ spec:
       labels:
         app: {{ template "fullname" . }}
     spec:
+    {{ if .Values.image.repoCredsSecretName }}
       imagePullSecrets:
         - name: {{ .Values.image.repoCredsSecretName }}
+    {{ end }}
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}/contoso-bikerental-notification:{{ .Values.image.tag }}"
